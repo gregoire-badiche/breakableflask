@@ -1,19 +1,45 @@
+
 name: Automatisation des tests DevSecOps
+
 on: push
+
 jobs:
   Dependances:
     runs-on: ubuntu-latest
     steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
       - name: Dependances
         run: |
-          echo "ecrire ici le scrypt de contrôle des dépendances"
+          mkdir -p "$HOME/.cache/trivy"
+          docker run --rm \
+            -v "$PWD:/project:ro" \
+            -v "$HOME/.cache/trivy:/root/.cache/trivy" \
+            aquasec/trivy:latest fs \
+            --scanners vuln \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            /project/requirements.txt
+
   Dockerfile:
     runs-on: ubuntu-latest
     needs: Dependances
     steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
       - name: Test Dockerfile
         run: |
-          echo "ecrire ici le scrypt de contrôle du Dockerfile"
+          mkdir -p "$HOME/.cache/trivy"
+          docker run --rm \
+            -v "$PWD:/project:ro" \
+            -v "$HOME/.cache/trivy:/root/.cache/trivy" \
+            aquasec/trivy:latest config \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            /project/Dockerfile
+
   Deploy:
     runs-on: ubuntu-latest
     needs: Dockerfile
